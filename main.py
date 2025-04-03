@@ -39,26 +39,36 @@ def restrictedH(t,x):
     pxdot = -x[2] + x[1] - mu1 * (x[2] + mu2)/r1**3 - mu2*(x[2] - mu1)/r2**3 + x[2] + x_direction_force_term(t)
     pydot = -x[3] - x[0] - mu1 * x[3]/r1**3 - mu2 * x[3]/r2**3 + x[3] + y_direction_force_term(t)
     return np.array([pxdot,pydot,q1dot,q2dot])
+## Indicator function attempt 1, leads to some bad behaviour as these functions are not Lipschitz continuous, but this on/off behaviour is really what we want.
+# def x_direction_force_term(t):
+#     if t <= 0.03:
+#         return -30
+#     elif 12.5 <= t <= 12.6:
+#         return -4
+#     elif 48<= t <= 48.01:
+#         return 5
+#     else:
+#         return 0
+#
+# def y_direction_force_term(t):
+#     if t <= 0.06:
+#         return -30
+#     elif 12.5 <= t <= 12.8:
+#         return -2
+#     elif 48 <= t <= 48.01:
+#         return 0
+#     else:
+#         return 0
 
+def gaussian(magnitude, shift, stretch, t):
+    return magnitude * np.exp(-stretch*(t-shift)**2)
+
+## We want to give gaussian functions a try, but I am skeptical. Could be quite hard to control.
 def x_direction_force_term(t):
-    if t <= 0.03:
-        return -30
-    elif 12.5 <= t <= 12.6:
-        return -4
-    elif 48<= t <= 48.01:
-        return 5
-    else:
-        return 0
+    return gaussian(4,47.9,500,t) + gaussian(1,50.1,500,t) + gaussian(1,51,500,t)
 
 def y_direction_force_term(t):
-    if t <= 0.06:
-        return -30
-    elif 12.5 <= t <= 12.8:
-        return -2
-    elif 48 <= t <= 48.01:
-        return 0
-    else:
-        return 0
+    return gaussian(1,47.9,500,t) + gaussian(0.1,51,500,t)
 
 class ButcherTab:
     def __init__(self,A,b,c):
@@ -116,12 +126,13 @@ class Gauss:
 lx,ly = calc_Lagrnage_Points(0.9990463,9.537e-4)
 
 #x0 = np.array([-ly[4],lx[4]+0.01,lx[4]+0.01,ly[4]])
-x0 = np.array([0.0,0.99,0.99,0.0])
+#x0 = np.array([0.0,0.99,0.99,0.0])
 #x0 = np.array([-0.01,lx[2],lx[2],0.01])
+x0 = np.array([0.0,1.1,0.6,0.0])
 
 t0=0
-h = 0.001
-max_t = 70
+h = 0.01
+max_t = 100
 
 GO6 = ButcherTab([[5/36,2/9 - (np.sqrt(15))/15,5/36 - (np.sqrt(15))/30],[5/36+(np.sqrt(15))/24,2/9,5/36-np.sqrt(15)/24],[5/36+np.sqrt(15)/30,2/9+np.sqrt(15)/15,5/36]],[5/18,4/9,5/18],[1/2-np.sqrt(15)/10,1/2,1/2+np.sqrt(15)])
 Gl = Gauss(restrictedH, t0, x0, h, max_t, GO6)
@@ -131,13 +142,27 @@ xn = np.reshape(xn, (int(len(xn)/4),4))
 plt.xlim(-1.5,1.5)
 plt.ylim(-1.5,1.5)
 
-plt.scatter(0.9990463,0)
-#plt.scatter(xn[-1,2],xn[-1,3])
-plt.scatter(-9.537e-4,0)
-#plt.plot(xn[:,2],xn[:,3])
+m1coords = np.array([0.9990463,0])
+m2coords = np.array([-9.537e-4,0])
 
+m1inertial_frame = apply_rotation_matrix(m1coords,max_t)
+m2inertial_frame = apply_rotation_matrix(m2coords,max_t)
+
+# plt.scatter(m1coords[0],m1coords[1])
+# plt.scatter(m2coords[0],m2coords[1])
+# plt.plot(xn[:,2],xn[:,3], label='Rotating Frame Orbit')
+# plt.scatter(xn[-1,2],xn[-1,3])
+
+plt.scatter(m1inertial_frame[0],m1inertial_frame[1]) #Gives us the positions of the planets at the end of
+plt.scatter(m2inertial_frame[0],m2inertial_frame[1]) #the simulation
 rotation_coords = np.column_stack((xn[:,2],xn[:,3]))
 derotated_coords = derotate(rotation_coords,times)
 plt.plot(derotated_coords[:,0],derotated_coords[:,1],label='Non-Rotating Orbit')
 plt.scatter(derotated_coords[-1,0],derotated_coords[-1,1])
+
+
+plt.xlabel('x')
+plt.ylabel('y')
+plt.legend(loc='upper right')
+plt.title("t=" + str(max_t/(2*np.pi))[:5] + " Jupiter Years")
 plt.show()

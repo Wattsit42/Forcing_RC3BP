@@ -1,0 +1,5 @@
+Format M, b, a and a slash indicates a new set of parameters for a new function
+
+Simulation 1 Gaussian Settings
+x: 4,47.9,500 / 1,50.1,500 / 1,51,500
+y: 1,47.9,500 / 0.1,51,500
