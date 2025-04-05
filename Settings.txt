@@ -15,4 +15,7 @@ Simulation 2 Gaussian Settings ---> Slingshot
 Initial Condition x0 = np.array([0.2,3.4,0.1,0.0])
 x: -------------
 y: -18.7,0.2,795
-Simulation 3 Gaussian Settings
+Simulation 3 Gaussian Settings ---> Earth Moon Earth
+Initial Condition x0 = np.array([0.2,3.4,0.1,0.0])
+x: -1,6,5
+y: -18.7,0.2,795 / 1,5.5,8 / -3.6,15,900 / -30,16,900
