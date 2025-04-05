@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import PIL
 ## IMPLEMENT STEP SIZE CONTROL FOR THE GAUSS METHOD
 
 def calc_Lagrnage_Points(mu1,mu2):
@@ -18,7 +20,7 @@ def calc_Lagrnage_Points(mu1,mu2):
     return np.array([l1x,l2x,l3x,l4x,l5x]), np.array([l1y,l2y,l3y,l4y,l5y])
 
 def apply_rotation_matrix(x,t):
-    M =np.array([[np.cos(t),-np.sin(t)],[np.sin(t),np.cos(t)]])
+    M = np.array([[np.cos(t),-np.sin(t)],[np.sin(t),np.cos(t)]])
     return M @ x
 
 def derotate(x,times):
@@ -30,8 +32,11 @@ def derotate(x,times):
     return derotated
 
 def restrictedH(t,x):
-    mu1 = 0.9990463
-    mu2 = 9.537e-4
+    # mu1 = 0.9990463 # Jupiter Sun system values
+    # mu2 = 9.537e-4
+    #
+    mu1 = 0.98785 # Earth Moon system values
+    mu2 = 1.215e-2
     r1 = np.sqrt((x[2] + mu2)**2 + x[3]**2)
     r2 = np.sqrt((x[2] - mu1)**2 + x[3]**2)
     q1dot = x[0] + x[3]
@@ -39,7 +44,7 @@ def restrictedH(t,x):
     pxdot = -x[2] + x[1] - mu1 * (x[2] + mu2)/r1**3 - mu2*(x[2] - mu1)/r2**3 + x[2] + x_direction_force_term(t)
     pydot = -x[3] - x[0] - mu1 * x[3]/r1**3 - mu2 * x[3]/r2**3 + x[3] + y_direction_force_term(t)
     return np.array([pxdot,pydot,q1dot,q2dot])
-## Indicator function attempt 1, leads to some bad behaviour as these functions are not Lipschitz continuous, but this on/off behaviour is really what we want.
+# Indicator function attempt 1, leads to some bad behaviour as these functions are not Lipschitz continuous, but this on/off behaviour is really what we want.
 # def x_direction_force_term(t):
 #     if t <= 0.03:
 #         return -30
@@ -65,10 +70,10 @@ def gaussian(magnitude, shift, stretch, t):
 
 ## We want to give gaussian functions a try, but I am skeptical. Could be quite hard to control.
 def x_direction_force_term(t):
-    return gaussian(4,47.9,500,t) + gaussian(1,50.1,500,t) + gaussian(1,51,500,t)
+    return gaussian(-1,6,5,t)
 
 def y_direction_force_term(t):
-    return gaussian(1,47.9,500,t) + gaussian(0.1,51,500,t)
+    return gaussian(-18.7,0.2,795,t) + gaussian(1,5.5,8,t) + gaussian(-3.6,15,900,t) + gaussian(-30,16,900,t)
 
 class ButcherTab:
     def __init__(self,A,b,c):
@@ -77,6 +82,7 @@ class ButcherTab:
         self.c = c
 
 class Gauss:
+    #While this is named after the Gauss method, it would really work for an arbitrary Runge-Kutta method
     def __init__(self, func, t_0, x_0, h, max_t, Butcher):
         self.func = func
         self.t_0 = t_0
@@ -123,46 +129,79 @@ class Gauss:
             stage_sum += stages[i]*self.B.b[i]
         return stage_sum
 
-lx,ly = calc_Lagrnage_Points(0.9990463,9.537e-4)
+#lx,ly = calc_Lagrnage_Points(0.9990463,9.537e-4) #Sun Jupiter Lagrange Point approximations
+lx, ly = calc_Lagrnage_Points(0.98785,1.215e-2) #Earth Moon Lagrange Point approximations
 
-#x0 = np.array([-ly[4],lx[4]+0.01,lx[4]+0.01,ly[4]])
 #x0 = np.array([0.0,0.99,0.99,0.0])
-#x0 = np.array([-0.01,lx[2],lx[2],0.01])
-x0 = np.array([0.0,1.1,0.6,0.0])
+#x0 = np.array([0.0,1.1,0.6,0.0])
+#x0 = np.array([0.0,1.1,0.5,0.0]) # First Gaussian Earth Moon example
+x0 = np.array([0.2,3.4,0.1,0.0])
 
 t0=0
 h = 0.01
-max_t = 100
+max_t = 20
 
-GO6 = ButcherTab([[5/36,2/9 - (np.sqrt(15))/15,5/36 - (np.sqrt(15))/30],[5/36+(np.sqrt(15))/24,2/9,5/36-np.sqrt(15)/24],[5/36+np.sqrt(15)/30,2/9+np.sqrt(15)/15,5/36]],[5/18,4/9,5/18],[1/2-np.sqrt(15)/10,1/2,1/2+np.sqrt(15)])
+GO6 = ButcherTab([[5/36,2/9 - (np.sqrt(15))/15,5/36 - (np.sqrt(15))/30],[5/36+(np.sqrt(15))/24,2/9,5/36-np.sqrt(15)/24],[5/36+np.sqrt(15)/30,2/9+np.sqrt(15)/15,5/36]],[5/18,4/9,5/18],[1/2-np.sqrt(15)/10,1/2,1/2+np.sqrt(15)/10])
 Gl = Gauss(restrictedH, t0, x0, h, max_t, GO6)
 xn,times = Gl.integrate(20)
 xn = np.reshape(xn, (int(len(xn)/4),4))
-
+# This gets us the intertial frame coordinates
+rotation_coords = np.column_stack((xn[:,2],xn[:,3]))
+derotated_coords = derotate(rotation_coords,times)
+# Sets up the figure
+fig, ax = plt.subplots(1,1)
+plt.xlabel('x')
+plt.ylabel('y')
 plt.xlim(-1.5,1.5)
 plt.ylim(-1.5,1.5)
 
-m1coords = np.array([0.9990463,0])
-m2coords = np.array([-9.537e-4,0])
+# m1coords = np.array([-9.537e-4,0]) # Sun-Jupiter
+# m2coords = np.array([0.9990463,0])
+
+m1coords = np.array([-1.215e-2,0]) # Earth-Moon
+m2coords = np.array([0.98785,0])
+#Rotating Frame plot
+# plt.scatter(m1coords[0],m1coords[1], label='m1')
+# plt.scatter(m2coords[0],m2coords[1],label = 'm2')
+# plt.plot(xn[:,2],xn[:,3], label='Rotating Frame Orbit')
+# plt.scatter(xn[-1,2],xn[-1,3], label='Satellite')
 
 m1inertial_frame = apply_rotation_matrix(m1coords,max_t)
 m2inertial_frame = apply_rotation_matrix(m2coords,max_t)
-
-# plt.scatter(m1coords[0],m1coords[1])
-# plt.scatter(m2coords[0],m2coords[1])
-# plt.plot(xn[:,2],xn[:,3], label='Rotating Frame Orbit')
-# plt.scatter(xn[-1,2],xn[-1,3])
-
-plt.scatter(m1inertial_frame[0],m1inertial_frame[1]) #Gives us the positions of the planets at the end of
-plt.scatter(m2inertial_frame[0],m2inertial_frame[1]) #the simulation
-rotation_coords = np.column_stack((xn[:,2],xn[:,3]))
-derotated_coords = derotate(rotation_coords,times)
-plt.plot(derotated_coords[:,0],derotated_coords[:,1],label='Non-Rotating Orbit')
-plt.scatter(derotated_coords[-1,0],derotated_coords[-1,1])
+# Inertial frame plot
+# plt.scatter(m1inertial_frame[0],m1inertial_frame[1], label = 'm1') #Gives us the positions of the planets at the end of
+# plt.scatter(m2inertial_frame[0],m2inertial_frame[1], label='m2') #the simulation
+# plt.plot(derotated_coords[:,0],derotated_coords[:,1],label='Non-Rotating Orbit')
+# plt.scatter(derotated_coords[-1,0],derotated_coords[-1,1],label='Satellite')
 
 
-plt.xlabel('x')
-plt.ylabel('y')
+# Animation Section
+
+orbit_line = ax.plot(derotated_coords[0,0],derotated_coords[0,1],label='Non-Rotating Orbit')[0]
+m1_plot = ax.scatter(m1coords[0],m1coords[1], label = 'm1')
+m2_plot = ax.scatter(m2coords[0],m2coords[1], label = 'm2')
+m3_plot = ax.scatter(x0[2],x0[3],label = 'm3')
+def update(frame):
+    # Update the orbit line
+    x = derotated_coords[:frame,0]
+    y = derotated_coords[:frame,1]
+    orbit_line.set_xdata(x)
+    orbit_line.set_ydata(y)
+    # Update the scatter plots
+    m1_pos = apply_rotation_matrix(m1coords,times[frame])
+    m2_pos = apply_rotation_matrix(m2coords,times[frame])
+    m3_pos = derotated_coords[frame]
+    m1_plot.set_offsets(m1_pos)
+    m2_plot.set_offsets(m2_pos)
+    m3_plot.set_offsets(m3_pos)
+    return orbit_line,m1_plot,m2_plot,m3_plot
+ani = FuncAnimation(fig, update, frames=len(times), interval=1)
+
+
+
+# plt.xlim(0.9,1.1)
+# plt.ylim(-0.1,0.1)
 plt.legend(loc='upper right')
-plt.title("t=" + str(max_t/(2*np.pi))[:5] + " Jupiter Years")
+plt.title("t~" + str(max_t/(2*np.pi))[:5] + " Months")
+ani.save(filename="pillow_example.gif", writer="pillow")
 plt.show()
