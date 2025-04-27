@@ -105,10 +105,12 @@ def gaussian(magnitude, shift, stretch, t):
 
 # Gaussian Functions used for forcing
 def x_direction_force_term(t):
-    return gaussian(1,1.3,15,t) + gaussian(-2,17,15,t)
+    #return gaussian(1,1.3,15,t) + gaussian(-2,17,15,t) ## Second simulation in report
+    return gaussian(-1,6,5,t) ## First simulation in report
 
 def y_direction_force_term(t):
-    return gaussian(1.5,14,23,t) + gaussian(-2,17.5,15,t)
+    #return gaussian(1.5,14,23,t) + gaussian(-2,17.5,15,t) ## Second simulation in report
+    return gaussian(-18.7,0.2,795,t) + gaussian(1,5.5,8,t) + gaussian(-3.6,15,900,t) + gaussian(-30,16,900,t)
 
 class ButcherTab:
     # Allows us to specify the method we feed into our integrator
@@ -168,16 +170,14 @@ class Integrator:
 #lx,ly = calc_Lagrnage_Points(0.9990463,9.537e-4) #Sun Jupiter Lagrange Point approximations
 lx, ly = calc_Lagrnage_Points(0.98785,1.215e-2) #Earth Moon Lagrange Point approximations
 
-#x0 = np.array([0.0,0.99,0.99,0.0])
-#x0 = np.array([0.0,1.1,0.6,0.0])
-x0 = np.array([0.0,1.1,0.5,0.0]) # First Gaussian Earth Moon example
-#x0 = np.array([0.2,3.4,0.1,0.0])
-#x0 = np.array([-ly[1]-0.02,lx[1]-0.05,lx[1],ly[1]-0.05])
-#x0 = np.array([-1.51337587, -1.2256231,  -0.18189379,  0.3139274])
+#x0 = np.array([0.0,0.99,0.99,0.0]) # Defunct
+#x0 = np.array([0.0,1.1,0.6,0.0]) # Defunct
+#x0 = np.array([0.0,1.1,0.5,0.0]) # Good Gaussian
+x0 = np.array([0.2,3.4,0.1,0.0]) # Bad Gaussian
 
 t0=0
 h = 0.001
-max_t = 50
+max_t = 30
 
 GO6 = ButcherTab([[5/36,2/9 - (np.sqrt(15))/15,5/36 - (np.sqrt(15))/30],[5/36+(np.sqrt(15))/24,2/9,5/36-np.sqrt(15)/24],[5/36+np.sqrt(15)/30,2/9+np.sqrt(15)/15,5/36]],[5/18,4/9,5/18],[1/2-np.sqrt(15)/10,1/2,1/2+np.sqrt(15)/10])
 Gl = Integrator(restrictedH, t0, x0, h, max_t, GO6)
@@ -200,13 +200,13 @@ m1coords = np.array([-1.215e-2,0]) # Earth-Moon
 m2coords = np.array([0.98785,0])
 
 #Rotating Frame plot
-# plt.scatter(m1coords[0],m1coords[1], label='m1')
-# plt.scatter(m2coords[0],m2coords[1],label = 'm2')
-# plt.plot(xn[:,2],xn[:,3], label='Rotating Frame Orbit')
-# plt.scatter(xn[-1,2],xn[-1,3], label='Satellite')
-# ax.scatter(lx,ly, marker='x',color='r')
-# for i in range(len(lx)):
-#     plt.text(lx[i] + 0.08,ly[i]+0.08, 'L'+ str(i+1), color='r')
+plt.scatter(m1coords[0],m1coords[1], label='m1')
+plt.scatter(m2coords[0],m2coords[1],label = 'm2')
+plt.plot(xn[:,2],xn[:,3], label='Rotating Frame Orbit')
+plt.scatter(xn[-1,2],xn[-1,3], label='Satellite')
+ax.scatter(lx,ly, marker='x',color='r')
+for i in range(len(lx)):
+    plt.text(lx[i] + 0.08,ly[i]+0.08, 'L'+ str(i+1), color='r')
 
 
 m1inertial_frame = apply_rotation_matrix(m1coords,max_t)
@@ -252,9 +252,9 @@ plt.show()
 plt.plot(times,fi, label='Jacobi Integral value')
 plt.xlabel('t')
 plt.ylabel('Jacobi Integral')
-plt.plot(times,np.full(len(times),3.188335762149994), label='L1 Jacobi Integral Value')
-plt.plot(times,np.full(len(times),3.1721558585857297), label='L2 Jacobi Integral Value')
-plt.plot(times,np.full(len(times),3.0121465654194313), label='L3 Jacobi Integral Value')
-plt.plot(times,np.full(len(times),2.9879976225000004), label='L4, L5 Jacobi Integral Value')
+# plt.plot(times,np.full(len(times),3.188335762149994), label='L1 Jacobi Integral Value')
+# plt.plot(times,np.full(len(times),3.1721558585857297), label='L2 Jacobi Integral Value')
+# plt.plot(times,np.full(len(times),3.0121465654194313), label='L3 Jacobi Integral Value')
+# plt.plot(times,np.full(len(times),2.9879976225000004), label='L4, L5 Jacobi Integral Value')
 plt.legend()
 plt.show()
