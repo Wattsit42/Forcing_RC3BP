@@ -28,6 +28,7 @@ def calc_U(x0,mu1,mu2):
     return U
 
 def calc_Lagrnage_Points(mu1,mu2):
+    #Calculates an approximation of the Lagrange points using the series reversion formulae
     l1y = 0
     a1 = (mu2/(3*mu1))**(1/3)
     l1x = mu1 - a1 + a1**2/3 + a1**3/9 + 23*a1**4/81
@@ -91,6 +92,7 @@ def restrictedH(t,x):
 #         return 0
 
 def find_fi_indexes(times,start,stop):
+    # Used for a now defunct averaging algorithm
     start_index = -1
     end_index = -1
     for i in range(len(times)-1):
@@ -120,7 +122,7 @@ class ButcherTab:
         self.c = c
 
 class Integrator:
-    #While this is named after the Gauss method, it would really work for an arbitrary Runge-Kutta method
+    #This is a refinement on our earlier method and is made to work for a general butcher table and a function of the form f(t,x)
     def __init__(self, func, t_0, x_0, h, max_t, Butcher):
         self.func = func
         self.t_0 = t_0
@@ -156,7 +158,7 @@ class Integrator:
         raise
 
     def interior_staging(self, i, xn, ks):
-        stage_sum = np.zeros(len(xn))
+        stage_sum = np.zeros(len(xn)) # Array of zeros
         for j in range(len(self.B.A[i])):
             stage_sum += self.B.A[i][j] * ks[j]
         return xn + self.h * stage_sum
@@ -219,7 +221,7 @@ m2inertial_frame = apply_rotation_matrix(m2coords,max_t)
 # plt.scatter(derotated_coords[-1,0],derotated_coords[-1,1],label='Satellite')
 
 
-# Animation Section
+# Animation Section. Can take a very long time to run
 
 # orbit_line = ax.plot(derotated_coords[0,0],derotated_coords[0,1],label='Non-Rotating Orbit')[0]
 # m1_plot = ax.scatter(m1coords[0],m1coords[1], label = 'm1')
@@ -247,7 +249,7 @@ plt.title("t~" + str(max_t/(2*np.pi))[:5] + " Lunar Years")
 #ani.save(filename="pillow_example.gif", writer="pillow",fps = 60)
 plt.show()
 
-# Plots the modified Jacobi Integral along with the sep values of Jacobi Integral
+# Plots the modified Jacobi Integral along with the separating values of Jacobi Integral
 
 plt.plot(times,fi, label='Jacobi Integral value')
 plt.xlabel('t')
